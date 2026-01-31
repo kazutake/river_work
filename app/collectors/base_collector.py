@@ -62,7 +62,7 @@ class BaseCollector(ABC):
             except (UnicodeDecodeError, LookupError):
                 text = response.content.decode("utf-8", errors="replace")
 
-            return BeautifulSoup(text, "lxml")
+            return BeautifulSoup(text, "html.parser")
         except Exception as e:
             logger.warning(f"ページ取得失敗 [{self.source_name}] {url}: {e}")
             return None
