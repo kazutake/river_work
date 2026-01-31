@@ -866,6 +866,33 @@ async function triggerCollection() {
     }
 }
 
+async function triggerReanalyze() {
+    const btn = document.getElementById('reanalyze-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '解析中...';
+    }
+
+    try {
+        await fetchAPI('/api/reanalyze', { method: 'POST' });
+        alert('キーワード再解析を開始しました。完了までしばらくお待ちください。');
+        setTimeout(() => {
+            loadDashboard();
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = '再解析';
+            }
+        }, 15000);
+    } catch (e) {
+        console.error('再解析エラー:', e);
+        alert('再解析の開始に失敗しました。');
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '再解析';
+        }
+    }
+}
+
 // === ユーティリティ ===
 async function fetchAPI(url, options = {}) {
     const response = await fetch(url, {

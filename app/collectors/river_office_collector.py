@@ -174,10 +174,12 @@ class RiverOfficeCollector(BaseCollector):
                 continue
 
             date = self._extract_date_from_context(link)
+            context = self._get_context_text(link)
             articles.append({
                 "source": self.source_name,
                 "source_url": source_url,
                 "title": text[:200],
+                "content": context[:500] if context else None,
                 "url": full_url,
                 "published_date": date,
                 "collected_date": datetime.now().strftime("%Y-%m-%d"),
@@ -210,10 +212,12 @@ class RiverOfficeCollector(BaseCollector):
             if self._is_relevant(text):
                 seen_urls.add(full_url)
                 date = self._extract_date_from_context(link)
+                context = self._get_context_text(link)
                 articles.append({
                     "source": self.source_name,
                     "source_url": source_url,
                     "title": text[:200],
+                    "content": context[:500] if context else None,
                     "url": full_url,
                     "published_date": date,
                     "collected_date": datetime.now().strftime("%Y-%m-%d"),
@@ -222,6 +226,21 @@ class RiverOfficeCollector(BaseCollector):
                 })
 
         return articles
+
+    def _get_context_text(self, element) -> str:
+        """リンク要素周辺のコンテキストテキストを取得"""
+        parent = element.parent
+        while parent:
+            if parent.name == "tr":
+                return parent.get_text(separator=" ", strip=True)
+            if parent.name in ("li", "dd", "dt", "p"):
+                return parent.get_text(separator=" ", strip=True)
+            if parent.name in ("div", "section", "body", "table"):
+                break
+            parent = parent.parent
+        if element.parent:
+            return element.parent.get_text(separator=" ", strip=True)[:300]
+        return ""
 
     def _is_relevant(self, text: str) -> bool:
         """河川事業・発注に関連するテキストか判定"""

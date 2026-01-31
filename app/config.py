@@ -13,6 +13,11 @@ RIVER_KEYWORDS = {
         "気候変動", "豪雨", "台風", "線状降水帯",
         "流域治水", "内水氾濫", "高潮", "津波",
         "河川管理", "水位管理", "ダム管理", "砂防",
+        # 基本単語（短い単語は他カテゴリとの重複を許容）
+        "河川", "ダム", "洪水", "水防",
+        "河川改修", "河川維持", "河川災害", "河川復旧",
+        "堤防強化", "堤防補強", "護岸整備",
+        "排水機場", "水門", "樋門", "床止め", "水制",
     ],
     "数値解析・シミュレーション": [
         "数値解析", "数値シミュレーション", "数値計算",
@@ -27,6 +32,8 @@ RIVER_KEYWORDS = {
         "CFD", "流体解析", "乱流モデル",
         "地盤解析", "浸透流解析", "安定解析",
         "構造解析", "耐震解析", "動的解析",
+        # 基本単語
+        "シミュレーション", "解析", "計算",
     ],
     "先端技術": [
         "AI", "人工知能", "機械学習", "深層学習", "ディープラーニング",
@@ -38,6 +45,8 @@ RIVER_KEYWORDS = {
         "ビッグデータ", "データ解析", "統計解析",
         "リアルタイム", "予測", "早期警戒",
         "自動化", "ロボット", "ICT施工",
+        # 基本単語
+        "ICT", "CIM", "BIM",
     ],
     "政策・制度": [
         "河川法", "水防法", "砂防法",
@@ -47,6 +56,8 @@ RIVER_KEYWORDS = {
         "PPP", "PFI", "官民連携",
         "技術基準", "ガイドライン", "マニュアル",
         "予算", "事業評価", "費用便益",
+        # 基本単語
+        "防災", "減災", "国土強靭化",
     ],
     "発注・調達": [
         "一般競争入札", "公募型プロポーザル", "総合評価落札方式",
@@ -56,6 +67,10 @@ RIVER_KEYWORDS = {
         "砂防工事", "ダム工事", "水門工事",
         "解析業務", "シミュレーション業務", "検討業務",
         "技術提案", "プロポーザル", "総合評価",
+        # 基本単語
+        "入札", "発注", "落札", "契約", "公告",
+        "工事", "業務", "委託", "設計", "調査", "測量",
+        "発注見通し", "入札公告", "落札結果",
     ],
     "河道計画・河道設計": [
         "河道計画", "河道設計", "河道改修",
@@ -72,6 +87,8 @@ RIVER_KEYWORDS = {
         "河道の平面形状", "河道の縦横断形状",
         "治水安全度", "計画規模", "超過確率",
         "河床材料", "河床形態", "移動床", "固定床",
+        # 基本単語
+        "河道", "河床", "浚渫", "掘削",
     ],
 }
 
@@ -344,64 +361,50 @@ ALL_RIVER_OFFICES = (
 
 # 各地方整備局の入札・契約情報ページ
 PROCUREMENT_SOURCES = [
-    # --- 国土交通省 本省 ---
-    {"name": "国土交通省 入札・契約情報",
-     "region": "全国", "bureau": "国土交通省",
-     "url": "https://www.mlit.go.jp/chotatsu/index.html",
-     "type": "ministry"},
-
     # --- 北海道開発局 ---
     {"name": "北海道開発局 入札・契約情報",
      "region": "北海道", "bureau": "北海道開発局",
-     "url": "https://www.hkd.mlit.go.jp/ky/jg/giken/index.html",
-     "type": "bureau"},
-
-    # --- 東北地方整備局 ---
-    {"name": "東北地方整備局 入札・契約情報",
-     "region": "東北", "bureau": "東北地方整備局",
-     "url": "https://www.thr.mlit.go.jp/bumon/b06111/cp-info/index.html",
+     "url": "https://www.hkd.mlit.go.jp/ky/category/u23dsn00000001d3.html",
      "type": "bureau"},
 
     # --- 関東地方整備局 ---
     {"name": "関東地方整備局 入札・契約情報",
      "region": "関東", "bureau": "関東地方整備局",
-     "url": "https://www.ktr.mlit.go.jp/honkyoku/nyuusatu/index.htm",
+     "url": "https://www.ktr.mlit.go.jp/nyuusatu/index.html",
      "type": "bureau"},
 
     # --- 北陸地方整備局 ---
     {"name": "北陸地方整備局 入札・契約情報",
      "region": "北陸", "bureau": "北陸地方整備局",
-     "url": "https://www.hrr.mlit.go.jp/bosyu/index.html",
+     "url": "https://www.hrr.mlit.go.jp/keiyaku/index.html",
      "type": "bureau"},
 
     # --- 中部地方整備局 ---
     {"name": "中部地方整備局 入札・契約情報",
      "region": "中部", "bureau": "中部地方整備局",
-     "url": "https://www.cbr.mlit.go.jp/architecture/kensetsugijutsu/index.htm",
+     "url": "https://www.cbr.mlit.go.jp/contract/index.htm",
+     "type": "bureau"},
+    {"name": "中部地方整備局 発注見通し",
+     "region": "中部", "bureau": "中部地方整備局",
+     "url": "https://www.cbr.mlit.go.jp/contract/kouji/hachu.htm",
      "type": "bureau"},
 
     # --- 近畿地方整備局 ---
-    {"name": "近畿地方整備局 入札・契約情報",
+    {"name": "近畿地方整備局 発注・入札情報",
      "region": "近畿", "bureau": "近畿地方整備局",
-     "url": "https://www.kkr.mlit.go.jp/contract/index.php",
-     "type": "bureau"},
-
-    # --- 中国地方整備局 ---
-    {"name": "中国地方整備局 入札・契約情報",
-     "region": "中国", "bureau": "中国地方整備局",
-     "url": "https://www.cgr.mlit.go.jp/contract/index.htm",
+     "url": "https://www.kkr.mlit.go.jp/n_info/index.html",
      "type": "bureau"},
 
     # --- 四国地方整備局 ---
     {"name": "四国地方整備局 入札・契約情報",
      "region": "四国", "bureau": "四国地方整備局",
-     "url": "https://www.skr.mlit.go.jp/bosyu/index.html",
+     "url": "https://www.skr.mlit.go.jp/menu/nyusatu.html",
      "type": "bureau"},
 
     # --- 九州地方整備局 ---
     {"name": "九州地方整備局 入札・契約情報",
      "region": "九州", "bureau": "九州地方整備局",
-     "url": "https://www.qsr.mlit.go.jp/n-contract/index.html",
+     "url": "https://www.qsr.mlit.go.jp/",
      "type": "bureau"},
 ]
 
@@ -410,9 +413,5 @@ PROCUREMENT_PORTAL_SOURCES = [
     {"name": "国土交通省 電子入札システム",
      "region": "全国", "bureau": "国土交通省",
      "url": "https://www.e-bisc.go.jp/",
-     "type": "portal"},
-    {"name": "入札情報サービス(PPI)",
-     "region": "全国", "bureau": "国土交通省",
-     "url": "https://ppi.epco.go.jp/",
      "type": "portal"},
 ]

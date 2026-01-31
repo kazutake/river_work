@@ -1,5 +1,6 @@
 """公共事業 発注情報コレクター"""
 
+import io
 import logging
 import re
 from datetime import datetime
@@ -119,6 +120,9 @@ class ProcurementCollector(BaseCollector):
 
         # 落札結果・契約結果ページを探索
         articles.extend(await self._collect_bid_results())
+
+        # Excelファイル（発注見通し等）を収集
+        articles.extend(await self._collect_excel_files())
 
         return articles
 
@@ -342,6 +346,137 @@ class ProcurementCollector(BaseCollector):
                             article["estimated_amount"] = row_amount
                     articles.append(article)
 
+        return articles
+
+    async def _collect_excel_files(self) -> list[dict]:
+        """発注見通し等のExcelファイルを探してダウンロード・解析"""
+        articles = []
+        soup = await self.fetch_page(self.base_url)
+        if not soup:
+            return articles
+
+        excel_urls = set()
+        for link in soup.find_all("a", href=True):
+            href = link["href"]
+            text = link.get_text(strip=True)
+            if href.lower().endswith((".xlsx", ".xls")):
+                if any(kw in text or kw in href for kw in [
+                    "発注", "見通し", "工事", "業務", "河川",
+                    "hacchu", "mitoshi", "kouji",
+                ]):
+                    url = self.resolve_url(href)
+                    if self._is_safe_url(url):
+                        excel_urls.add(url)
+
+        for url in list(excel_urls)[:3]:
+            try:
+                client = await self._get_client()
+                resp = await client.get(url)
+                if resp.status_code != 200:
+                    continue
+                articles.extend(
+                    self._parse_excel_data(resp.content, url)
+                )
+            except Exception as e:
+                logger.warning(f"Excel取得失敗: {url}: {e}")
+
+        return articles
+
+    def _parse_excel_data(self, data: bytes, source_url: str) -> list[dict]:
+        """Excelファイルから河川関連の発注情報を抽出"""
+        articles = []
+        try:
+            from openpyxl import load_workbook
+            wb = load_workbook(io.BytesIO(data), read_only=True)
+        except Exception as e:
+            logger.warning(f"Excel解析失敗: {e}")
+            return articles
+
+        for ws in wb.worksheets:
+            rows = list(ws.iter_rows(values_only=True))
+            if len(rows) < 2:
+                continue
+
+            # ヘッダー行を探す
+            header_idx = None
+            headers = []
+            for i, row in enumerate(rows[:5]):
+                row_str = [str(c or "").strip() for c in row]
+                if any(kw in " ".join(row_str) for kw in [
+                    "件名", "業務名", "工事名", "案件", "名称",
+                ]):
+                    header_idx = i
+                    headers = row_str
+                    break
+
+            if header_idx is None:
+                continue
+
+            name_col = None
+            amount_col = None
+            method_col = None
+            for j, h in enumerate(headers):
+                if any(kw in h for kw in [
+                    "件名", "業務名", "工事名", "案件名", "名称",
+                ]):
+                    if name_col is None:
+                        name_col = j
+                if any(kw in h for kw in [
+                    "予定価格", "設計金額", "概算", "金額",
+                ]):
+                    amount_col = j
+                if any(kw in h for kw in ["方式", "入札"]):
+                    method_col = j
+
+            if name_col is None:
+                continue
+
+            for row in rows[header_idx + 1:]:
+                if not row or len(row) <= name_col:
+                    continue
+                name = str(row[name_col] or "").strip()
+                if not name or len(name) < 3:
+                    continue
+                if not self._is_river_procurement(name):
+                    continue
+
+                row_text = " ".join(str(c or "") for c in row)
+
+                est_amount = None
+                if amount_col is not None and len(row) > amount_col:
+                    val = row[amount_col]
+                    if isinstance(val, (int, float)) and val > 0:
+                        est_amount = int(val)
+                        if est_amount < 1000:
+                            est_amount = int(est_amount * 1000)
+                    elif val:
+                        est_amount = extract_amount(str(val))
+
+                method = None
+                if method_col is not None and len(row) > method_col:
+                    method = classify_procurement_method(
+                        str(row[method_col] or "")
+                    )
+
+                articles.append({
+                    "source": self.source_name,
+                    "source_url": source_url,
+                    "title": name[:200],
+                    "content": row_text[:500],
+                    "url": source_url + "#excel-" + str(abs(hash(name)))[:10],
+                    "published_date": None,
+                    "collected_date": datetime.now().strftime("%Y-%m-%d"),
+                    "category": "発注見通し",
+                    "region": self.region,
+                    "estimated_amount": est_amount,
+                    "business_type": classify_business_type(name),
+                    "procurement_method": method or classify_procurement_method(name),
+                    "kadou_category": classify_kadou_category(
+                        name + " " + row_text
+                    ),
+                })
+
+        wb.close()
         return articles
 
     # --------------------------------------------------

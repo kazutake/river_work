@@ -27,6 +27,7 @@ class TrendAnalyzer:
                 FROM keywords k
                 JOIN articles a ON k.article_id = a.id
                 WHERE {condition}
+                  AND k.keyword != '_none_'
             """
 
             if category:
@@ -62,6 +63,7 @@ class TrendAnalyzer:
                 FROM keywords k
                 JOIN articles a ON k.article_id = a.id
                 WHERE {condition}
+                  AND k.keyword != '_none_'
                 GROUP BY k.keyword_category
                 ORDER BY total DESC
             """)
@@ -100,6 +102,7 @@ class TrendAnalyzer:
                     FROM keywords k
                     JOIN articles a ON k.article_id = a.id
                     WHERE {condition}
+                      AND k.keyword != '_none_'
                     GROUP BY k.keyword
                     ORDER BY SUM(k.frequency) DESC
                     LIMIT 10
@@ -117,7 +120,9 @@ class TrendAnalyzer:
                        SUM(k.frequency) as count
                 FROM keywords k
                 JOIN articles a ON k.article_id = a.id
-                WHERE {condition} {keyword_filter}
+                WHERE {condition}
+                  AND k.keyword != '_none_'
+                  {keyword_filter}
                 GROUP BY DATE(a.collected_date), k.keyword
                 ORDER BY date
             """, params)
@@ -150,6 +155,7 @@ class TrendAnalyzer:
                 JOIN articles a ON k.article_id = a.id
                 WHERE {condition}
                   AND k.keyword_category = '数値解析・シミュレーション'
+                  AND k.keyword != '_none_'
                 GROUP BY k.keyword
                 ORDER BY total DESC
             """)
@@ -182,7 +188,9 @@ class TrendAnalyzer:
                        SUM(k.frequency) as total
                 FROM articles a
                 JOIN keywords k ON a.id = k.article_id
-                WHERE {condition} AND a.region IS NOT NULL
+                WHERE {condition}
+                  AND a.region IS NOT NULL
+                  AND k.keyword != '_none_'
                 GROUP BY a.region, k.keyword_category
                 ORDER BY a.region, total DESC
             """)
@@ -234,6 +242,7 @@ class TrendAnalyzer:
                 FROM keywords k
                 JOIN articles a ON k.article_id = a.id
                 WHERE DATE(a.collected_date) >= DATE('now', '-7 days')
+                  AND k.keyword != '_none_'
                 GROUP BY k.keyword
                 ORDER BY total DESC
                 LIMIT 10

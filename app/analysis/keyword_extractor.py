@@ -46,35 +46,67 @@ class KeywordExtractor:
 
         return found
 
-    async def analyze_articles(self):
-        """未解析の記事のキーワードを抽出してDBに保存"""
+    async def analyze_articles(self, force: bool = False):
+        """未解析の記事のキーワードを抽出してDBに保存
+
+        force=True の場合は全記事を再解析する
+        """
         db = await get_db()
         try:
-            # キーワード未抽出の記事を取得
-            cursor = await db.execute(
-                """SELECT a.id, a.title, a.content
-                   FROM articles a
-                   LEFT JOIN keywords k ON a.id = k.article_id
-                   WHERE k.id IS NULL"""
-            )
+            if force:
+                # 既存キーワードを全削除して再解析
+                await db.execute("DELETE FROM keywords")
+                await db.commit()
+                cursor = await db.execute(
+                    "SELECT id, title, content FROM articles"
+                )
+            else:
+                # キーワード未抽出の記事を取得
+                cursor = await db.execute(
+                    """SELECT a.id, a.title, a.content
+                       FROM articles a
+                       LEFT JOIN keywords k ON a.id = k.article_id
+                       WHERE k.id IS NULL"""
+                )
             articles = await cursor.fetchall()
 
             count = 0
             for article in articles:
+                # ソース名（source）も取得してテキストに含める
                 text = (article[1] or "") + " " + (article[2] or "")
                 keywords = self.extract_keywords(text)
 
-                for kw in keywords:
+                if keywords:
+                    for kw in keywords:
+                        await db.execute(
+                            """INSERT INTO keywords
+                               (article_id, keyword, keyword_category, frequency)
+                               VALUES (?, ?, ?, ?)""",
+                            (article[0], kw["keyword"], kw["category"],
+                             kw["frequency"]),
+                        )
+                        count += 1
+                else:
+                    # キーワードが見つからなくても処理済みマーカーを挿入
+                    # （再処理を防ぐため）
                     await db.execute(
-                        """INSERT INTO keywords (article_id, keyword, keyword_category, frequency)
+                        """INSERT INTO keywords
+                           (article_id, keyword, keyword_category, frequency)
                            VALUES (?, ?, ?, ?)""",
-                        (article[0], kw["keyword"], kw["category"], kw["frequency"]),
+                        (article[0], "_none_", "_processed_", 0),
                     )
-                    count += 1
 
             await db.commit()
-            logger.info(f"キーワード抽出完了: {len(articles)}記事, {count}キーワード")
-            return {"articles_processed": len(articles), "keywords_extracted": count}
+            logger.info(
+                f"キーワード抽出完了: {len(articles)}記事, {count}キーワード"
+            )
+            return {
+                "articles_processed": len(articles),
+                "keywords_extracted": count,
+            }
+        except Exception as e:
+            logger.error(f"キーワード抽出エラー: {e}")
+            return {"error": str(e)}
         finally:
             await db.close()
 
@@ -83,6 +115,12 @@ class KeywordExtractor:
         db = await get_db()
         try:
             today = datetime.now().strftime("%Y-%m-%d")
+
+            # 既存の本日分スナップショットを削除（重複防止）
+            await db.execute(
+                "DELETE FROM trend_snapshots WHERE snapshot_date = ?",
+                (today,),
+            )
 
             # 各期間でのキーワード集計
             periods = {
@@ -98,6 +136,7 @@ class KeywordExtractor:
                     FROM keywords k
                     JOIN articles a ON k.article_id = a.id
                     WHERE {condition}
+                      AND k.keyword != '_none_'
                     GROUP BY k.keyword, k.keyword_category
                     ORDER BY total DESC
                 """)
@@ -113,5 +152,7 @@ class KeywordExtractor:
 
             await db.commit()
             logger.info(f"トレンドスナップショット生成完了: {today}")
+        except Exception as e:
+            logger.error(f"トレンドスナップショットエラー: {e}")
         finally:
             await db.close()

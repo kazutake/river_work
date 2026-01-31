@@ -251,15 +251,38 @@ async def api_market_projects(
 async def api_trigger_collection(background_tasks: BackgroundTasks):
     """手動でデータ収集をトリガー"""
     async def run():
-        manager = CollectorManager()
-        result = await manager.run_collection()
-        logger.info(f"手動収集完了: {result}")
-        # 収集後にキーワード解析を実行
-        await keyword_extractor.analyze_articles()
-        await keyword_extractor.generate_trend_snapshot()
+        try:
+            manager = CollectorManager()
+            result = await manager.run_collection()
+            logger.info(f"手動収集完了: {result}")
+        except Exception as e:
+            logger.error(f"データ収集エラー: {e}")
+
+        # 収集の成否に関わらずキーワード解析を実行
+        try:
+            await keyword_extractor.analyze_articles()
+            await keyword_extractor.generate_trend_snapshot()
+            logger.info("キーワード解析完了")
+        except Exception as e:
+            logger.error(f"キーワード解析エラー: {e}")
 
     background_tasks.add_task(run)
     return {"status": "collecting", "message": "データ収集を開始しました"}
+
+
+@app.post("/api/reanalyze")
+async def api_reanalyze(background_tasks: BackgroundTasks):
+    """キーワードを強制再解析（既存データに新キーワード辞書を適用）"""
+    async def run():
+        try:
+            result = await keyword_extractor.analyze_articles(force=True)
+            logger.info(f"キーワード再解析完了: {result}")
+            await keyword_extractor.generate_trend_snapshot()
+        except Exception as e:
+            logger.error(f"再解析エラー: {e}")
+
+    background_tasks.add_task(run)
+    return {"status": "reanalyzing", "message": "キーワード再解析を開始しました"}
 
 
 @app.get("/api/collection/logs")
