@@ -6,8 +6,85 @@ from datetime import datetime
 from urllib.parse import urlparse
 
 from .base_collector import BaseCollector
+from ..config import KADOU_BUSINESS_CATEGORIES
 
 logger = logging.getLogger(__name__)
+
+
+def extract_amount(text: str) -> int | None:
+    """テキストから金額（円）を抽出する。複数ある場合は最大値を返す。"""
+    amounts = []
+    # 「約XX億XX百万円」「XX億円」「XX,XXX千円」「XX百万円」等のパターン
+    patterns = [
+        # 億＋万円: 3億5000万円 → 350000000
+        (r"(\d[\d,.]*)億(\d[\d,.]*)万\s*円", lambda m: int(
+            float(m.group(1).replace(",", "")) * 1_0000_0000
+            + float(m.group(2).replace(",", "")) * 1_0000
+        )),
+        # 億円: 3億円 → 300000000
+        (r"(\d[\d,.]*)億\s*円", lambda m: int(
+            float(m.group(1).replace(",", "")) * 1_0000_0000
+        )),
+        # 百万円: 350百万円 → 350000000
+        (r"(\d[\d,.]*)百万\s*円", lambda m: int(
+            float(m.group(1).replace(",", "")) * 100_0000
+        )),
+        # 千円: 350,000千円 → 350000000
+        (r"(\d[\d,.]*)千\s*円", lambda m: int(
+            float(m.group(1).replace(",", "")) * 1000
+        )),
+        # 万円: 35000万円 → 350000000
+        (r"(\d[\d,.]*)万\s*円", lambda m: int(
+            float(m.group(1).replace(",", "")) * 1_0000
+        )),
+        # 普通の円: 350,000,000円
+        (r"(\d{1,3}(?:,\d{3})+)\s*円", lambda m: int(
+            m.group(1).replace(",", "")
+        )),
+        # 数字+円（7桁以上のみ: 少額を除外）
+        (r"(\d{7,})\s*円", lambda m: int(m.group(1))),
+    ]
+
+    for pattern, parser in patterns:
+        for match in re.finditer(pattern, text):
+            try:
+                val = parser(match)
+                if val and val >= 100_0000:  # 100万円以上のみ
+                    amounts.append(val)
+            except (ValueError, IndexError):
+                continue
+
+    return max(amounts) if amounts else None
+
+
+def classify_kadou_category(text: str) -> str | None:
+    """テキストから河道計画・設計の業務カテゴリを判定"""
+    for category, keywords in KADOU_BUSINESS_CATEGORIES.items():
+        if any(kw in text for kw in keywords):
+            return category
+    return None
+
+
+def classify_business_type(text: str) -> str | None:
+    """業務種別を判定（業務委託 / 工事）"""
+    if any(kw in text for kw in ["業務委託", "業務", "検討", "策定", "調査", "解析", "設計業務"]):
+        return "業務委託"
+    if any(kw in text for kw in ["工事", "施工", "築造", "改修工事"]):
+        return "工事"
+    return None
+
+
+def classify_procurement_method(text: str) -> str | None:
+    """入札方式を判定"""
+    if "プロポーザル" in text or "公募型" in text:
+        return "プロポーザル"
+    if "総合評価" in text:
+        return "総合評価落札方式"
+    if "一般競争" in text:
+        return "一般競争入札"
+    if "指名競争" in text:
+        return "指名競争入札"
+    return None
 
 
 class ProcurementCollector(BaseCollector):
@@ -63,31 +140,17 @@ class ProcurementCollector(BaseCollector):
             if self._is_river_procurement(text):
                 seen_urls.add(full_url)
                 date = self._extract_date_from_context(link)
-                articles.append({
-                    "source": self.source_name,
-                    "source_url": self.base_url,
-                    "title": text[:200],
-                    "url": full_url,
-                    "published_date": date,
-                    "collected_date": datetime.now().strftime("%Y-%m-%d"),
-                    "category": "発注情報",
-                    "region": self.region,
-                })
+                articles.append(self._build_article(
+                    text, full_url, self.base_url, date, "発注情報",
+                ))
 
             # 入札関連ページへのリンク（河川フィルタなし）も収集
             elif self._is_procurement_link(text):
                 seen_urls.add(full_url)
                 date = self._extract_date_from_context(link)
-                articles.append({
-                    "source": self.source_name,
-                    "source_url": self.base_url,
-                    "title": text[:200],
-                    "url": full_url,
-                    "published_date": date,
-                    "collected_date": datetime.now().strftime("%Y-%m-%d"),
-                    "category": "入札公告",
-                    "region": self.region,
-                })
+                articles.append(self._build_article(
+                    text, full_url, self.base_url, date, "入札公告",
+                ))
 
         return articles
 
@@ -140,16 +203,9 @@ class ProcurementCollector(BaseCollector):
                 if self._is_river_procurement(text):
                     seen_urls.add(full_url)
                     date = self._extract_date_from_context(link)
-                    articles.append({
-                        "source": self.source_name,
-                        "source_url": url,
-                        "title": text[:200],
-                        "url": full_url,
-                        "published_date": date,
-                        "collected_date": datetime.now().strftime("%Y-%m-%d"),
-                        "category": "入札公告",
-                        "region": self.region,
-                    })
+                    articles.append(self._build_article(
+                        text, full_url, url, date, "入札公告",
+                    ))
 
         return articles
 
@@ -198,18 +254,34 @@ class ProcurementCollector(BaseCollector):
                 ):
                     seen_urls.add(full_url)
                     date = self._extract_date_from_context(link)
-                    articles.append({
-                        "source": self.source_name,
-                        "source_url": url,
-                        "title": text[:200],
-                        "url": full_url,
-                        "published_date": date,
-                        "collected_date": datetime.now().strftime("%Y-%m-%d"),
-                        "category": "発注見通し",
-                        "region": self.region,
-                    })
+                    articles.append(self._build_article(
+                        text, full_url, url, date, "発注見通し",
+                    ))
 
         return articles
+
+    # --------------------------------------------------
+    # 記事生成ヘルパー
+    # --------------------------------------------------
+
+    def _build_article(self, text: str, full_url: str, source_url: str,
+                       date: str | None, category: str) -> dict:
+        """記事dictを生成し、金額・業務分類情報も付与する"""
+        return {
+            "source": self.source_name,
+            "source_url": source_url,
+            "title": text[:200],
+            "url": full_url,
+            "published_date": date,
+            "collected_date": datetime.now().strftime("%Y-%m-%d"),
+            "category": category,
+            "region": self.region,
+            # 発注詳細（collector_manager が DB に保存）
+            "estimated_amount": extract_amount(text),
+            "business_type": classify_business_type(text),
+            "procurement_method": classify_procurement_method(text),
+            "kadou_category": classify_kadou_category(text),
+        }
 
     # --------------------------------------------------
     # 判定メソッド

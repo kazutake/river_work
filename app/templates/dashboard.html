@@ -62,6 +62,7 @@
         <button class="tab-btn" data-tab="simulation">数値解析・シミュレーション</button>
         <button class="tab-btn" data-tab="timeseries">時系列推移</button>
         <button class="tab-btn" data-tab="regional">地域別分析</button>
+        <button class="tab-btn" data-tab="market">マーケット分析</button>
         <button class="tab-btn" data-tab="articles">記事一覧</button>
         <button class="tab-btn" data-tab="logs">収集ログ</button>
     </nav>
@@ -151,6 +152,122 @@
                     <canvas id="regional-chart"></canvas>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- マーケット分析タブ -->
+    <div id="tab-market" class="tab-content">
+        <p style="color:var(--text-light);font-size:13px;margin-bottom:20px;">
+            河道計画・河道設計に関わる発注情報を分析し、マーケット規模・ニーズ・求められる技術を可視化します。
+        </p>
+
+        <!-- マーケットサマリーカード -->
+        <section class="summary-grid" id="market-summary-cards">
+            <div class="summary-card">
+                <div class="summary-value" id="market-total-projects">-</div>
+                <div class="summary-label">河道関連案件数</div>
+            </div>
+            <div class="summary-card accent">
+                <div class="summary-value" id="market-total-amount">-</div>
+                <div class="summary-label">推定マーケット規模</div>
+            </div>
+            <div class="summary-card success">
+                <div class="summary-value" id="market-avg-amount">-</div>
+                <div class="summary-label">平均発注金額</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-value" id="market-with-amount">-</div>
+                <div class="summary-label">金額情報あり案件</div>
+            </div>
+        </section>
+
+        <!-- 業務種別内訳 -->
+        <div class="chart-grid">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">業務種別内訳</span>
+                </div>
+                <div class="card-body" id="market-type-breakdown">
+                    <div class="loading"><div class="spinner"></div>読み込み中...</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">河道業務カテゴリ別</span>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="kadou-category-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ニーズ分析 -->
+        <div class="chart-grid">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">河道計画・設計で頻出するキーワード（ニーズ）</span>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="height:400px;">
+                        <canvas id="kadou-needs-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">河道関連で共起するキーワード</span>
+                </div>
+                <div class="card-body" id="co-keywords-list">
+                    <div class="loading"><div class="spinner"></div>読み込み中...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 求められる技術 -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">求められる技術（数値解析・シミュレーション / 先端技術）</span>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height:400px;">
+                    <canvas id="tech-demand-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 入札方式・地域別 -->
+        <div class="chart-grid">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">入札方式別件数</span>
+                </div>
+                <div class="card-body" id="procurement-methods-list">
+                    <div class="loading"><div class="spinner"></div>読み込み中...</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">地域別マーケット</span>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="market-regional-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 案件一覧 -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">河道関連発注案件一覧</span>
+            </div>
+            <div class="card-body" id="market-projects-list">
+                <div class="loading"><div class="spinner"></div>読み込み中...</div>
+            </div>
+            <div class="pagination" id="market-projects-pagination"></div>
         </div>
     </div>
 

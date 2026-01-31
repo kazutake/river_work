@@ -106,6 +106,30 @@ class CollectorManager:
                         )
                         new_count += 1
 
+                        # 発注詳細があれば保存
+                        if any(article.get(k) for k in (
+                            "estimated_amount", "business_type",
+                            "procurement_method", "kadou_category",
+                        )):
+                            article_id_cursor = await db.execute(
+                                "SELECT last_insert_rowid()"
+                            )
+                            article_id = (await article_id_cursor.fetchone())[0]
+                            await db.execute(
+                                """INSERT INTO procurement_details
+                                   (article_id, estimated_amount,
+                                    business_type, procurement_method,
+                                    kadou_category)
+                                   VALUES (?, ?, ?, ?, ?)""",
+                                (
+                                    article_id,
+                                    article.get("estimated_amount"),
+                                    article.get("business_type"),
+                                    article.get("procurement_method"),
+                                    article.get("kadou_category"),
+                                ),
+                            )
+
                     await db.commit()
                     total_articles += len(articles)
                     total_new += new_count

@@ -499,6 +499,11 @@ body {
     to { transform: rotate(360deg); }
 }
 
+/* マーケット分析テーブルリンク */
+.log-table a:hover {
+    text-decoration: underline;
+}
+
 /* レスポンシブ */
 @media (max-width: 768px) {
     .header {

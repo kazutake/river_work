@@ -14,6 +14,7 @@ const CATEGORY_COLORS = {
     '先端技術': '#27ae60',
     '政策・制度': '#8e44ad',
     '発注・調達': '#e67e22',
+    '河道計画・河道設計': '#1a5276',
 };
 
 let currentPeriod = '30d';
@@ -90,6 +91,9 @@ async function loadTabData(tab) {
             break;
         case 'regional':
             await loadRegionalAnalysis();
+            break;
+        case 'market':
+            await loadMarketTab();
             break;
         case 'articles':
             await loadArticles(1);
@@ -369,6 +373,365 @@ async function loadRegionalAnalysis() {
         }
     } catch (e) {
         console.error('地域別分析エラー:', e);
+    }
+}
+
+// === マーケット分析タブ ===
+async function loadMarketTab() {
+    await Promise.all([
+        loadMarketSummary(),
+        loadKadouCategories(),
+        loadNeedsAnalysis(),
+        loadTechDemand(),
+        loadMarketRegional(),
+        loadMarketProjects(1),
+    ]);
+}
+
+function formatAmount(yen) {
+    if (!yen || yen === 0) return '-';
+    if (yen >= 100000000) return (yen / 100000000).toFixed(1) + '億円';
+    if (yen >= 10000) return (yen / 10000).toFixed(0) + '万円';
+    return yen.toLocaleString() + '円';
+}
+
+async function loadMarketSummary() {
+    try {
+        const data = await fetchAPI(`/api/market/summary?period=${currentPeriod}`);
+
+        document.getElementById('market-total-projects').textContent =
+            data.total_projects.toLocaleString();
+        document.getElementById('market-total-amount').textContent =
+            formatAmount(data.total_amount);
+        document.getElementById('market-avg-amount').textContent =
+            formatAmount(data.avg_amount);
+        document.getElementById('market-with-amount').textContent =
+            data.projects_with_amount.toLocaleString();
+
+        // 業務種別内訳
+        const typeContainer = document.getElementById('market-type-breakdown');
+        if (typeContainer) {
+            if (data.by_business_type.length === 0) {
+                typeContainer.innerHTML = '<div class="loading">業務種別データがありません</div>';
+            } else {
+                typeContainer.innerHTML = `
+                    <table class="log-table">
+                        <thead>
+                            <tr>
+                                <th>業務種別</th>
+                                <th>件数</th>
+                                <th>合計金額</th>
+                                <th>平均金額</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.by_business_type.map(t => `
+                                <tr>
+                                    <td><strong>${escapeHtml(t.type)}</strong></td>
+                                    <td>${t.count}</td>
+                                    <td>${formatAmount(t.total_amount)}</td>
+                                    <td>${formatAmount(t.avg_amount)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }
+        }
+    } catch (e) {
+        console.error('マーケットサマリーエラー:', e);
+    }
+}
+
+async function loadKadouCategories() {
+    try {
+        const data = await fetchAPI(`/api/market/kadou-categories?period=${currentPeriod}`);
+        const ctx = document.getElementById('kadou-category-chart');
+        if (!ctx) return;
+
+        destroyChart('kadou-category');
+
+        if (data.length === 0) {
+            ctx.parentElement.innerHTML = '<div class="loading">カテゴリデータがありません</div>';
+            return;
+        }
+
+        charts['kadou-category'] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(d => d.category),
+                datasets: [
+                    {
+                        label: '件数',
+                        data: data.map(d => d.count),
+                        backgroundColor: COLORS.slice(0, data.length),
+                        borderRadius: 4,
+                        yAxisID: 'y',
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '河道業務サブカテゴリ別件数',
+                        font: { size: 15, weight: 'bold' },
+                    },
+                    legend: { display: false },
+                },
+                scales: {
+                    y: { beginAtZero: true, title: { display: true, text: '件数' } },
+                },
+            },
+        });
+    } catch (e) {
+        console.error('河道カテゴリエラー:', e);
+    }
+}
+
+async function loadNeedsAnalysis() {
+    try {
+        const data = await fetchAPI(`/api/market/needs?period=${currentPeriod}`);
+
+        // 河道キーワード横棒グラフ
+        const ctx = document.getElementById('kadou-needs-chart');
+        if (ctx && data.kadou_keywords && data.kadou_keywords.length > 0) {
+            destroyChart('kadou-needs');
+            const keywords = data.kadou_keywords.slice(0, 15);
+            charts['kadou-needs'] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: keywords.map(k => k.keyword),
+                    datasets: [{
+                        label: '出現頻度',
+                        data: keywords.map(k => k.frequency),
+                        backgroundColor: '#1a5276',
+                        borderRadius: 4,
+                    }],
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: {
+                            display: true,
+                            text: '河道計画・設計キーワード頻度ランキング',
+                            font: { size: 15, weight: 'bold' },
+                        },
+                    },
+                    scales: { x: { beginAtZero: true } },
+                },
+            });
+        }
+
+        // 共起キーワードリスト
+        const coContainer = document.getElementById('co-keywords-list');
+        if (coContainer) {
+            const coKw = data.co_occurring_keywords || [];
+            if (coKw.length === 0) {
+                coContainer.innerHTML = '<div class="loading">共起キーワードデータがありません</div>';
+            } else {
+                const maxCount = coKw[0].article_count;
+                coContainer.innerHTML = `<ul class="keyword-list">${
+                    coKw.slice(0, 20).map((item, i) => `
+                        <li class="keyword-item">
+                            <span class="keyword-rank ${i < 3 ? 'top3' : ''}">${i + 1}</span>
+                            <div class="keyword-info">
+                                <div class="keyword-name">${escapeHtml(item.keyword)}</div>
+                                <div class="keyword-category">${escapeHtml(item.category || '')}</div>
+                            </div>
+                            <div class="keyword-bar">
+                                <div class="keyword-bar-fill" style="width: ${(item.article_count / maxCount * 100).toFixed(1)}%"></div>
+                            </div>
+                            <span class="keyword-count">${item.article_count}件</span>
+                        </li>
+                    `).join('')
+                }</ul>`;
+            }
+        }
+    } catch (e) {
+        console.error('ニーズ分析エラー:', e);
+    }
+}
+
+async function loadTechDemand() {
+    try {
+        const data = await fetchAPI(`/api/market/technology?period=${currentPeriod}`);
+
+        // 技術キーワードチャート
+        const ctx = document.getElementById('tech-demand-chart');
+        if (ctx) {
+            destroyChart('tech-demand');
+            const techKw = data.technology_keywords || [];
+
+            if (techKw.length === 0) {
+                ctx.parentElement.innerHTML = '<div class="loading">技術データがありません</div>';
+            } else {
+                // カテゴリ別に色分け
+                const bgColors = techKw.map(k =>
+                    k.category === '数値解析・シミュレーション' ? '#2980b9' : '#27ae60'
+                );
+                charts['tech-demand'] = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: techKw.slice(0, 20).map(k => k.keyword),
+                        datasets: [{
+                            label: '関連案件数',
+                            data: techKw.slice(0, 20).map(k => k.article_count),
+                            backgroundColor: bgColors.slice(0, 20),
+                            borderRadius: 4,
+                        }],
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            title: {
+                                display: true,
+                                text: '河道計画・設計で求められる技術キーワード（青=数値解析 / 緑=先端技術）',
+                                font: { size: 14, weight: 'bold' },
+                            },
+                        },
+                        scales: { x: { beginAtZero: true, title: { display: true, text: '関連案件数' } } },
+                    },
+                });
+            }
+        }
+
+        // 入札方式
+        const methodContainer = document.getElementById('procurement-methods-list');
+        if (methodContainer) {
+            const methods = data.procurement_methods || [];
+            if (methods.length === 0) {
+                methodContainer.innerHTML = '<div class="loading">入札方式データがありません</div>';
+            } else {
+                methodContainer.innerHTML = `
+                    <table class="log-table">
+                        <thead>
+                            <tr><th>入札方式</th><th>件数</th></tr>
+                        </thead>
+                        <tbody>
+                            ${methods.map(m => `
+                                <tr>
+                                    <td>${escapeHtml(m.method)}</td>
+                                    <td>${m.count}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }
+        }
+    } catch (e) {
+        console.error('技術需要分析エラー:', e);
+    }
+}
+
+async function loadMarketRegional() {
+    try {
+        const data = await fetchAPI(`/api/market/regional?period=${currentPeriod}`);
+        const ctx = document.getElementById('market-regional-chart');
+        if (!ctx) return;
+
+        destroyChart('market-regional');
+
+        if (data.length === 0) {
+            ctx.parentElement.innerHTML = '<div class="loading">地域別データがありません</div>';
+            return;
+        }
+
+        charts['market-regional'] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(d => d.region),
+                datasets: [{
+                    label: '案件数',
+                    data: data.map(d => d.project_count),
+                    backgroundColor: COLORS.slice(0, data.length),
+                    borderRadius: 4,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '地域別 河道関連案件数',
+                        font: { size: 15, weight: 'bold' },
+                    },
+                    legend: { display: false },
+                },
+                scales: { y: { beginAtZero: true } },
+            },
+        });
+    } catch (e) {
+        console.error('地域別マーケットエラー:', e);
+    }
+}
+
+async function loadMarketProjects(page) {
+    try {
+        const data = await fetchAPI(`/api/market/projects?period=${currentPeriod}&page=${page}&per_page=20`);
+        const container = document.getElementById('market-projects-list');
+        if (!container) return;
+
+        if (!data.projects || data.projects.length === 0) {
+            container.innerHTML = '<div class="loading">河道関連の発注案件がありません</div>';
+            return;
+        }
+
+        container.innerHTML = `
+            <table class="log-table">
+                <thead>
+                    <tr>
+                        <th>案件名</th>
+                        <th>地域</th>
+                        <th>河道カテゴリ</th>
+                        <th>業務種別</th>
+                        <th>推定金額</th>
+                        <th>収集日</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${data.projects.map(p => `
+                        <tr>
+                            <td><a href="${escapeHtml(p.url)}" target="_blank" rel="noopener" style="color:var(--primary);text-decoration:none;">${escapeHtml(p.title)}</a></td>
+                            <td>${escapeHtml(p.region || '-')}</td>
+                            <td>${escapeHtml(p.kadou_category || '-')}</td>
+                            <td>${escapeHtml(p.business_type || '-')}</td>
+                            <td>${formatAmount(p.estimated_amount)}</td>
+                            <td>${p.collected_date || '-'}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+
+        // ページネーション
+        const pagDiv = document.getElementById('market-projects-pagination');
+        if (pagDiv && data.pages > 1) {
+            let btns = '';
+            const start = Math.max(1, page - 3);
+            const end = Math.min(data.pages, page + 3);
+
+            if (page > 1) btns += `<button onclick="loadMarketProjects(${page - 1})">前</button>`;
+            for (let i = start; i <= end; i++) {
+                btns += `<button class="${i === page ? 'active' : ''}" onclick="loadMarketProjects(${i})">${i}</button>`;
+            }
+            if (page < data.pages) btns += `<button onclick="loadMarketProjects(${page + 1})">次</button>`;
+            pagDiv.innerHTML = btns;
+        } else if (pagDiv) {
+            pagDiv.innerHTML = '';
+        }
+    } catch (e) {
+        console.error('マーケット案件一覧エラー:', e);
     }
 }
 

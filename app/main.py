@@ -12,6 +12,7 @@ from fastapi.responses import HTMLResponse
 from .database import init_db
 from .analysis.keyword_extractor import KeywordExtractor
 from .analysis.trend_analyzer import TrendAnalyzer
+from .analysis.market_analyzer import MarketAnalyzer
 from .collectors.collector_manager import CollectorManager
 from .scheduler import start_scheduler, stop_scheduler
 
@@ -46,6 +47,7 @@ templates = Jinja2Templates(directory="app/templates")
 
 trend_analyzer = TrendAnalyzer()
 keyword_extractor = KeywordExtractor()
+market_analyzer = MarketAnalyzer()
 
 
 # === HTMLページ ===
@@ -191,6 +193,58 @@ async def api_articles(
         }
     finally:
         await db.close()
+
+
+# === マーケット分析API ===
+
+@app.get("/api/market/summary")
+async def api_market_summary(
+    period: str = Query("all", regex=r"^(7d|30d|90d|180d|365d|all)$"),
+):
+    """河道計画・設計のマーケット規模サマリー"""
+    return await market_analyzer.get_market_summary(period)
+
+
+@app.get("/api/market/kadou-categories")
+async def api_kadou_categories(
+    period: str = Query("all", regex=r"^(7d|30d|90d|180d|365d|all)$"),
+):
+    """河道業務サブカテゴリ別集計"""
+    return await market_analyzer.get_kadou_category_breakdown(period)
+
+
+@app.get("/api/market/needs")
+async def api_market_needs(
+    period: str = Query("all", regex=r"^(7d|30d|90d|180d|365d|all)$"),
+):
+    """河道計画・設計のニーズ分析"""
+    return await market_analyzer.get_needs_analysis(period)
+
+
+@app.get("/api/market/technology")
+async def api_market_technology(
+    period: str = Query("all", regex=r"^(7d|30d|90d|180d|365d|all)$"),
+):
+    """求められる技術の分析"""
+    return await market_analyzer.get_technology_demand(period)
+
+
+@app.get("/api/market/regional")
+async def api_market_regional(
+    period: str = Query("all", regex=r"^(7d|30d|90d|180d|365d|all)$"),
+):
+    """地域別マーケット"""
+    return await market_analyzer.get_regional_market(period)
+
+
+@app.get("/api/market/projects")
+async def api_market_projects(
+    period: str = Query("all", regex=r"^(7d|30d|90d|180d|365d|all)$"),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+):
+    """河道関連発注案件一覧"""
+    return await market_analyzer.get_kadou_projects(period, page, per_page)
 
 
 @app.post("/api/collect")
