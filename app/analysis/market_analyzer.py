@@ -8,6 +8,18 @@ from ..config import KADOU_BUSINESS_CATEGORIES
 
 logger = logging.getLogger(__name__)
 
+# 河道関連記事の判定条件（キーワードテーブル OR 発注詳細テーブルで河道分類あり）
+KADOU_FILTER = """(
+    a.id IN (
+        SELECT article_id FROM keywords
+        WHERE keyword_category = '河道計画・河道設計'
+    )
+    OR a.id IN (
+        SELECT article_id FROM procurement_details
+        WHERE kadou_category IS NOT NULL
+    )
+)"""
+
 
 class MarketAnalyzer:
     """河道計画・設計業務のマーケット規模・ニーズを分析する"""
@@ -21,48 +33,58 @@ class MarketAnalyzer:
         try:
             cond = self._period_condition(period)
 
-            # 河道関連キーワードを含む記事の発注詳細を集計
+            # 河道関連記事の発注詳細を集計
             cursor = await db.execute(f"""
                 SELECT
                     COUNT(DISTINCT a.id) as total_projects,
                     COUNT(DISTINCT CASE WHEN pd.estimated_amount IS NOT NULL
-                                        THEN a.id END) as projects_with_amount,
-                    SUM(pd.estimated_amount) as total_amount,
-                    AVG(pd.estimated_amount) as avg_amount,
-                    MIN(pd.estimated_amount) as min_amount,
-                    MAX(pd.estimated_amount) as max_amount
+                                        THEN a.id END) as with_est,
+                    COUNT(DISTINCT CASE WHEN pd.contract_amount IS NOT NULL
+                                        THEN a.id END) as with_contract,
+                    SUM(CASE WHEN pd.contract_amount IS NOT NULL
+                         THEN pd.contract_amount
+                         ELSE pd.estimated_amount END) as total_amount,
+                    AVG(CASE WHEN pd.contract_amount IS NOT NULL
+                         THEN pd.contract_amount
+                         WHEN pd.estimated_amount IS NOT NULL
+                         THEN pd.estimated_amount END) as avg_amount
                 FROM articles a
-                JOIN keywords k ON a.id = k.article_id
                 LEFT JOIN procurement_details pd ON a.id = pd.article_id
                 WHERE {cond}
-                  AND k.keyword_category = '河道計画・河道設計'
+                  AND {KADOU_FILTER}
             """)
             row = await cursor.fetchone()
 
             # 業務委託 vs 工事の内訳
             type_cursor = await db.execute(f"""
                 SELECT
-                    pd.business_type,
-                    COUNT(*) as count,
-                    SUM(pd.estimated_amount) as total,
-                    AVG(pd.estimated_amount) as avg
+                    COALESCE(pd.business_type, '未分類') as btype,
+                    COUNT(DISTINCT a.id) as count,
+                    SUM(CASE WHEN pd.contract_amount IS NOT NULL
+                         THEN pd.contract_amount
+                         ELSE pd.estimated_amount END) as total,
+                    AVG(CASE WHEN pd.contract_amount IS NOT NULL
+                         THEN pd.contract_amount
+                         WHEN pd.estimated_amount IS NOT NULL
+                         THEN pd.estimated_amount END) as avg
                 FROM articles a
-                JOIN keywords k ON a.id = k.article_id
-                JOIN procurement_details pd ON a.id = pd.article_id
+                LEFT JOIN procurement_details pd ON a.id = pd.article_id
                 WHERE {cond}
-                  AND k.keyword_category = '河道計画・河道設計'
-                  AND pd.business_type IS NOT NULL
-                GROUP BY pd.business_type
+                  AND {KADOU_FILTER}
+                GROUP BY btype
+                ORDER BY count DESC
             """)
             type_rows = await type_cursor.fetchall()
 
+            projects_with_amount = (row[1] or 0) + (row[2] or 0)
+            # 重複を除くため max
+            projects_with_amount = min(projects_with_amount, row[0] or 0)
+
             return {
                 "total_projects": row[0] or 0,
-                "projects_with_amount": row[1] or 0,
-                "total_amount": row[2] or 0,
-                "avg_amount": int(row[3]) if row[3] else 0,
-                "min_amount": row[4] or 0,
-                "max_amount": row[5] or 0,
+                "projects_with_amount": projects_with_amount,
+                "total_amount": row[3] or 0,
+                "avg_amount": int(row[4]) if row[4] else 0,
                 "by_business_type": [
                     {
                         "type": r[0],
@@ -85,12 +107,19 @@ class MarketAnalyzer:
         db = await get_db()
         try:
             cond = self._period_condition(period)
+
+            # procurement_details.kadou_category を使った集計
             cursor = await db.execute(f"""
                 SELECT
                     pd.kadou_category,
-                    COUNT(*) as count,
-                    SUM(pd.estimated_amount) as total_amount,
-                    AVG(pd.estimated_amount) as avg_amount
+                    COUNT(DISTINCT a.id) as count,
+                    SUM(CASE WHEN pd.contract_amount IS NOT NULL
+                         THEN pd.contract_amount
+                         ELSE pd.estimated_amount END) as total_amount,
+                    AVG(CASE WHEN pd.contract_amount IS NOT NULL
+                         THEN pd.contract_amount
+                         WHEN pd.estimated_amount IS NOT NULL
+                         THEN pd.estimated_amount END) as avg_amount
                 FROM articles a
                 JOIN procurement_details pd ON a.id = pd.article_id
                 WHERE {cond}
@@ -100,7 +129,7 @@ class MarketAnalyzer:
             """)
             rows = await cursor.fetchall()
 
-            return [
+            result = [
                 {
                     "category": row[0],
                     "count": row[1],
@@ -109,6 +138,28 @@ class MarketAnalyzer:
                 }
                 for row in rows
             ]
+
+            # キーワードテーブルからも補完（procurement_detailsに未分類でも
+            # キーワードで河道関連と判定された記事のキーワード頻度）
+            if not result:
+                kw_cursor = await db.execute(f"""
+                    SELECT k.keyword, COUNT(DISTINCT a.id) as count
+                    FROM articles a
+                    JOIN keywords k ON a.id = k.article_id
+                    WHERE {cond}
+                      AND k.keyword_category = '河道計画・河道設計'
+                    GROUP BY k.keyword
+                    ORDER BY count DESC
+                    LIMIT 10
+                """)
+                kw_rows = await kw_cursor.fetchall()
+                result = [
+                    {"category": row[0], "count": row[1],
+                     "total_amount": 0, "avg_amount": 0}
+                    for row in kw_rows
+                ]
+
+            return result
         finally:
             await db.close()
 
@@ -121,18 +172,17 @@ class MarketAnalyzer:
         try:
             cond = self._period_condition(period)
 
-            # 河道関連記事に同時に出現するキーワードを集計
+            # 河道関連記事に同時に出現する他カテゴリキーワードを集計
             cursor = await db.execute(f"""
-                SELECT k2.keyword, k2.keyword_category,
+                SELECT k.keyword, k.keyword_category,
                        COUNT(DISTINCT a.id) as article_count,
-                       SUM(k2.frequency) as total_freq
+                       SUM(k.frequency) as total_freq
                 FROM articles a
-                JOIN keywords k1 ON a.id = k1.article_id
-                JOIN keywords k2 ON a.id = k2.article_id
+                JOIN keywords k ON a.id = k.article_id
                 WHERE {cond}
-                  AND k1.keyword_category = '河道計画・河道設計'
-                  AND k2.keyword != k1.keyword
-                GROUP BY k2.keyword, k2.keyword_category
+                  AND {KADOU_FILTER}
+                  AND k.keyword_category != '河道計画・河道設計'
+                GROUP BY k.keyword, k.keyword_category
                 ORDER BY article_count DESC
                 LIMIT 30
             """)
@@ -184,16 +234,17 @@ class MarketAnalyzer:
 
             # 河道関連記事に出現する「数値解析・シミュレーション」と「先端技術」
             tech_cursor = await db.execute(f"""
-                SELECT k2.keyword, k2.keyword_category,
+                SELECT k.keyword, k.keyword_category,
                        COUNT(DISTINCT a.id) as article_count,
-                       SUM(k2.frequency) as total_freq
+                       SUM(k.frequency) as total_freq
                 FROM articles a
-                JOIN keywords k1 ON a.id = k1.article_id
-                JOIN keywords k2 ON a.id = k2.article_id
+                JOIN keywords k ON a.id = k.article_id
                 WHERE {cond}
-                  AND k1.keyword_category = '河道計画・河道設計'
-                  AND k2.keyword_category IN ('数値解析・シミュレーション', '先端技術')
-                GROUP BY k2.keyword, k2.keyword_category
+                  AND {KADOU_FILTER}
+                  AND k.keyword_category IN (
+                      '数値解析・シミュレーション', '先端技術'
+                  )
+                GROUP BY k.keyword, k.keyword_category
                 ORDER BY article_count DESC
             """)
             tech_keywords = [
@@ -208,12 +259,11 @@ class MarketAnalyzer:
 
             # 入札方式別の件数
             method_cursor = await db.execute(f"""
-                SELECT pd.procurement_method, COUNT(*) as count
+                SELECT pd.procurement_method, COUNT(DISTINCT a.id) as count
                 FROM articles a
-                JOIN keywords k ON a.id = k.article_id
                 JOIN procurement_details pd ON a.id = pd.article_id
                 WHERE {cond}
-                  AND k.keyword_category = '河道計画・河道設計'
+                  AND {KADOU_FILTER}
                   AND pd.procurement_method IS NOT NULL
                 GROUP BY pd.procurement_method
                 ORDER BY count DESC
@@ -241,13 +291,17 @@ class MarketAnalyzer:
             cursor = await db.execute(f"""
                 SELECT a.region,
                        COUNT(DISTINCT a.id) as project_count,
-                       SUM(pd.estimated_amount) as total_amount,
-                       AVG(pd.estimated_amount) as avg_amount
+                       SUM(CASE WHEN pd.contract_amount IS NOT NULL
+                            THEN pd.contract_amount
+                            ELSE pd.estimated_amount END) as total_amount,
+                       AVG(CASE WHEN pd.contract_amount IS NOT NULL
+                            THEN pd.contract_amount
+                            WHEN pd.estimated_amount IS NOT NULL
+                            THEN pd.estimated_amount END) as avg_amount
                 FROM articles a
-                JOIN keywords k ON a.id = k.article_id
                 LEFT JOIN procurement_details pd ON a.id = pd.article_id
                 WHERE {cond}
-                  AND k.keyword_category = '河道計画・河道設計'
+                  AND {KADOU_FILTER}
                   AND a.region IS NOT NULL
                 GROUP BY a.region
                 ORDER BY project_count DESC
@@ -278,9 +332,8 @@ class MarketAnalyzer:
             count_cursor = await db.execute(f"""
                 SELECT COUNT(DISTINCT a.id)
                 FROM articles a
-                JOIN keywords k ON a.id = k.article_id
                 WHERE {cond}
-                  AND k.keyword_category = '河道計画・河道設計'
+                  AND {KADOU_FILTER}
             """)
             total = (await count_cursor.fetchone())[0]
 
@@ -288,13 +341,13 @@ class MarketAnalyzer:
             cursor = await db.execute(f"""
                 SELECT DISTINCT a.id, a.source, a.title, a.url,
                        a.published_date, a.collected_date, a.region,
-                       pd.estimated_amount, pd.business_type,
-                       pd.procurement_method, pd.kadou_category
+                       pd.estimated_amount, pd.contract_amount,
+                       pd.business_type, pd.procurement_method,
+                       pd.kadou_category
                 FROM articles a
-                JOIN keywords k ON a.id = k.article_id
                 LEFT JOIN procurement_details pd ON a.id = pd.article_id
                 WHERE {cond}
-                  AND k.keyword_category = '河道計画・河道設計'
+                  AND {KADOU_FILTER}
                 ORDER BY a.collected_date DESC
                 LIMIT ? OFFSET ?
             """, (per_page, offset))
@@ -315,9 +368,10 @@ class MarketAnalyzer:
                         "collected_date": r[5],
                         "region": r[6],
                         "estimated_amount": r[7],
-                        "business_type": r[8],
-                        "procurement_method": r[9],
-                        "kadou_category": r[10],
+                        "contract_amount": r[8],
+                        "business_type": r[9],
+                        "procurement_method": r[10],
+                        "kadou_category": r[11],
                     }
                     for r in rows
                 ],

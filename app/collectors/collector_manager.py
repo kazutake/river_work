@@ -90,13 +90,15 @@ class CollectorManager:
 
                         await db.execute(
                             """INSERT INTO articles
-                               (source, source_url, title, published_date,
-                                collected_date, url, category, region)
-                               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                               (source, source_url, title, content,
+                                published_date, collected_date, url,
+                                category, region)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                             (
                                 article["source"],
                                 article["source_url"],
                                 article["title"],
+                                article.get("content"),
                                 article.get("published_date"),
                                 article["collected_date"],
                                 article["url"],
@@ -106,11 +108,17 @@ class CollectorManager:
                         )
                         new_count += 1
 
-                        # 発注詳細があれば保存
-                        if any(article.get(k) for k in (
-                            "estimated_amount", "business_type",
-                            "procurement_method", "kadou_category",
-                        )):
+                        # 発注詳細を保存（発注系カテゴリは常に保存）
+                        has_detail = any(article.get(k) for k in (
+                            "estimated_amount", "contract_amount",
+                            "business_type", "procurement_method",
+                            "kadou_category",
+                        ))
+                        is_procurement = article.get("category") in (
+                            "発注情報", "入札公告", "発注見通し",
+                            "落札結果", "契約結果",
+                        )
+                        if has_detail or is_procurement:
                             article_id_cursor = await db.execute(
                                 "SELECT last_insert_rowid()"
                             )
@@ -118,12 +126,13 @@ class CollectorManager:
                             await db.execute(
                                 """INSERT INTO procurement_details
                                    (article_id, estimated_amount,
-                                    business_type, procurement_method,
-                                    kadou_category)
-                                   VALUES (?, ?, ?, ?, ?)""",
+                                    contract_amount, business_type,
+                                    procurement_method, kadou_category)
+                                   VALUES (?, ?, ?, ?, ?, ?)""",
                                 (
                                     article_id,
                                     article.get("estimated_amount"),
+                                    article.get("contract_amount"),
                                     article.get("business_type"),
                                     article.get("procurement_method"),
                                     article.get("kadou_category"),

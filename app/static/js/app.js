@@ -695,7 +695,8 @@ async function loadMarketProjects(page) {
                         <th>地域</th>
                         <th>河道カテゴリ</th>
                         <th>業務種別</th>
-                        <th>推定金額</th>
+                        <th>予定価格</th>
+                        <th>落札金額</th>
                         <th>収集日</th>
                     </tr>
                 </thead>
@@ -707,6 +708,7 @@ async function loadMarketProjects(page) {
                             <td>${escapeHtml(p.kadou_category || '-')}</td>
                             <td>${escapeHtml(p.business_type || '-')}</td>
                             <td>${formatAmount(p.estimated_amount)}</td>
+                            <td style="color:${p.contract_amount ? 'var(--accent)' : 'inherit'};font-weight:${p.contract_amount ? '600' : 'normal'};">${formatAmount(p.contract_amount)}</td>
                             <td>${p.collected_date || '-'}</td>
                         </tr>
                     `).join('')}
