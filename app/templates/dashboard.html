@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>河川事業トレンド分析</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<header class="header">
+    <div>
+        <h1>河川事業トレンド分析</h1>
+        <div class="header-subtitle">国土交通省・都道府県の河川事業情報を収集・分析</div>
+    </div>
+    <div class="header-actions">
+        <select id="period-select" class="btn btn-secondary" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;padding:8px 12px;border-radius:8px;">
+            <option value="7d">過去7日</option>
+            <option value="30d" selected>過去30日</option>
+            <option value="90d">過去90日</option>
+            <option value="180d">過去180日</option>
+            <option value="365d">過去1年</option>
+            <option value="all">全期間</option>
+        </select>
+        <button id="collect-btn" class="btn btn-primary" onclick="triggerCollection()">
+            データ収集
+        </button>
+    </div>
+</header>
+
+<!-- メインコンテンツ -->
+<main class="main">
+
+    <!-- サマリーカード -->
+    <section class="summary-grid">
+        <div class="summary-card">
+            <div class="summary-value" id="total-articles">-</div>
+            <div class="summary-label">収集記事総数</div>
+        </div>
+        <div class="summary-card accent">
+            <div class="summary-value" id="today-articles">-</div>
+            <div class="summary-label">本日の収集数</div>
+        </div>
+        <div class="summary-card success">
+            <div class="summary-value" id="total-sources">-</div>
+            <div class="summary-label">情報ソース数</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-value" id="top-keyword-count" style="font-size:18px;">-</div>
+            <div class="summary-label">注目キーワード</div>
+        </div>
+    </section>
+
+    <!-- タブナビゲーション -->
+    <nav class="tab-nav">
+        <button class="tab-btn active" data-tab="overview">概要</button>
+        <button class="tab-btn" data-tab="simulation">数値解析・シミュレーション</button>
+        <button class="tab-btn" data-tab="timeseries">時系列推移</button>
+        <button class="tab-btn" data-tab="regional">地域別分析</button>
+        <button class="tab-btn" data-tab="articles">記事一覧</button>
+        <button class="tab-btn" data-tab="logs">収集ログ</button>
+    </nav>
+
+    <!-- 概要タブ -->
+    <div id="tab-overview" class="tab-content active">
+        <div class="chart-grid">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">カテゴリ分布</span>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="category-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">キーワードランキング</span>
+                </div>
+                <div class="card-body" id="keyword-ranking">
+                    <div class="loading"><div class="spinner"></div>読み込み中...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 数値解析・シミュレーションタブ -->
+    <div id="tab-simulation" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">数値解析・シミュレーション関連トレンド</span>
+            </div>
+            <div class="card-body">
+                <p style="color:var(--text-light);font-size:13px;margin-bottom:16px;">
+                    河川事業において求められている数値解析・シミュレーション技術のトレンドを表示します。
+                    洪水シミュレーション、流出解析、河床変動計算などの技術キーワードの出現頻度を分析しています。
+                </p>
+                <div class="chart-container" style="height:450px;">
+                    <canvas id="simulation-chart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">詳細データ</span>
+            </div>
+            <div class="card-body" id="simulation-detail">
+                <div class="loading"><div class="spinner"></div>読み込み中...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 時系列推移タブ -->
+    <div id="tab-timeseries" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">キーワード出現頻度の時系列推移</span>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height:450px;">
+                    <canvas id="timeseries-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 地域別分析タブ -->
+    <div id="tab-regional" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">地域別情報収集状況</span>
+            </div>
+            <div class="card-body">
+                <div class="region-grid" id="regional-grid">
+                    <div class="loading"><div class="spinner"></div>読み込み中...</div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">地域別グラフ</span>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="regional-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 記事一覧タブ -->
+    <div id="tab-articles" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">収集記事一覧</span>
+                <div class="filter-bar" style="margin-bottom:0;">
+                    <select id="article-category" onchange="loadArticles(1)">
+                        <option value="">全カテゴリ</option>
+                        <option value="報道発表">報道発表</option>
+                        <option value="技術基準">技術基準</option>
+                        <option value="技術研究開発">技術研究開発</option>
+                        <option value="新着情報">新着情報</option>
+                        <option value="地方整備局">地方整備局</option>
+                        <option value="都道府県">都道府県</option>
+                    </select>
+                    <select id="article-region" onchange="loadArticles(1)">
+                        <option value="">全地域</option>
+                        <option value="全国">全国</option>
+                        <option value="北海道">北海道</option>
+                        <option value="東北">東北</option>
+                        <option value="関東">関東</option>
+                        <option value="中部">中部</option>
+                        <option value="近畿">近畿</option>
+                        <option value="中国">中国</option>
+                        <option value="四国">四国</option>
+                        <option value="九州">九州</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-body" id="article-list">
+                <div class="loading"><div class="spinner"></div>読み込み中...</div>
+            </div>
+            <div class="pagination" id="article-pagination"></div>
+        </div>
+    </div>
+
+    <!-- 収集ログタブ -->
+    <div id="tab-logs" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">データ収集ログ</span>
+            </div>
+            <div class="card-body" id="log-list">
+                <div class="loading"><div class="spinner"></div>読み込み中...</div>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<script src="/static/js/app.js"></script>
+
+</body>
+</html>
