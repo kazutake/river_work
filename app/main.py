@@ -68,7 +68,7 @@ async def api_summary():
 
 @app.get("/api/trends/keywords")
 async def api_keyword_trends(
-    period: str = Query("30d", regex=r"^(7d|30d|90d|180d|365d|all)$"),
+    period: str = Query("30d", pattern=r"^(7d|30d|90d|180d|365d|all)$"),
     category: str | None = Query(None),
     limit: int = Query(20, ge=1, le=100),
 ):
@@ -78,7 +78,7 @@ async def api_keyword_trends(
 
 @app.get("/api/trends/categories")
 async def api_category_distribution(
-    period: str = Query("30d", regex=r"^(7d|30d|90d|180d|365d|all)$"),
+    period: str = Query("30d", pattern=r"^(7d|30d|90d|180d|365d|all)$"),
 ):
     """カテゴリ別分布"""
     return await trend_analyzer.get_category_distribution(period)
@@ -86,7 +86,7 @@ async def api_category_distribution(
 
 @app.get("/api/trends/timeseries")
 async def api_time_series(
-    period: str = Query("90d", regex=r"^(7d|30d|90d|180d|365d|all)$"),
+    period: str = Query("90d", pattern=r"^(7d|30d|90d|180d|365d|all)$"),
     keywords: str | None = Query(None, description="カンマ区切りキーワード"),
 ):
     """キーワード時系列推移"""
@@ -96,7 +96,7 @@ async def api_time_series(
 
 @app.get("/api/trends/simulation")
 async def api_simulation_trends(
-    period: str = Query("90d", regex=r"^(7d|30d|90d|180d|365d|all)$"),
+    period: str = Query("90d", pattern=r"^(7d|30d|90d|180d|365d|all)$"),
 ):
     """数値解析・シミュレーション関連トレンド"""
     return await trend_analyzer.get_simulation_trends(period)
@@ -104,7 +104,7 @@ async def api_simulation_trends(
 
 @app.get("/api/trends/regional")
 async def api_regional_analysis(
-    period: str = Query("30d", regex=r"^(7d|30d|90d|180d|365d|all)$"),
+    period: str = Query("30d", pattern=r"^(7d|30d|90d|180d|365d|all)$"),
 ):
     """地域別分析"""
     return await trend_analyzer.get_regional_analysis(period)
@@ -112,7 +112,7 @@ async def api_regional_analysis(
 
 @app.get("/api/articles")
 async def api_articles(
-    period: str = Query("30d", regex=r"^(7d|30d|90d|180d|365d|all)$"),
+    period: str = Query("30d", pattern=r"^(7d|30d|90d|180d|365d|all)$"),
     category: str | None = Query(None),
     region: str | None = Query(None),
     keyword: str | None = Query(None),
@@ -199,7 +199,7 @@ async def api_articles(
 
 @app.get("/api/market/summary")
 async def api_market_summary(
-    period: str = Query("all", regex=r"^(7d|30d|90d|180d|365d|all)$"),
+    period: str = Query("all", pattern=r"^(7d|30d|90d|180d|365d|all)$"),
 ):
     """河道計画・設計のマーケット規模サマリー"""
     return await market_analyzer.get_market_summary(period)
@@ -207,7 +207,7 @@ async def api_market_summary(
 
 @app.get("/api/market/kadou-categories")
 async def api_kadou_categories(
-    period: str = Query("all", regex=r"^(7d|30d|90d|180d|365d|all)$"),
+    period: str = Query("all", pattern=r"^(7d|30d|90d|180d|365d|all)$"),
 ):
     """河道業務サブカテゴリ別集計"""
     return await market_analyzer.get_kadou_category_breakdown(period)
@@ -215,7 +215,7 @@ async def api_kadou_categories(
 
 @app.get("/api/market/needs")
 async def api_market_needs(
-    period: str = Query("all", regex=r"^(7d|30d|90d|180d|365d|all)$"),
+    period: str = Query("all", pattern=r"^(7d|30d|90d|180d|365d|all)$"),
 ):
     """河道計画・設計のニーズ分析"""
     return await market_analyzer.get_needs_analysis(period)
@@ -223,7 +223,7 @@ async def api_market_needs(
 
 @app.get("/api/market/technology")
 async def api_market_technology(
-    period: str = Query("all", regex=r"^(7d|30d|90d|180d|365d|all)$"),
+    period: str = Query("all", pattern=r"^(7d|30d|90d|180d|365d|all)$"),
 ):
     """求められる技術の分析"""
     return await market_analyzer.get_technology_demand(period)
@@ -231,7 +231,7 @@ async def api_market_technology(
 
 @app.get("/api/market/regional")
 async def api_market_regional(
-    period: str = Query("all", regex=r"^(7d|30d|90d|180d|365d|all)$"),
+    period: str = Query("all", pattern=r"^(7d|30d|90d|180d|365d|all)$"),
 ):
     """地域別マーケット"""
     return await market_analyzer.get_regional_market(period)
@@ -239,7 +239,7 @@ async def api_market_regional(
 
 @app.get("/api/market/projects")
 async def api_market_projects(
-    period: str = Query("all", regex=r"^(7d|30d|90d|180d|365d|all)$"),
+    period: str = Query("all", pattern=r"^(7d|30d|90d|180d|365d|all)$"),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
 ):
