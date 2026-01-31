@@ -16,7 +16,7 @@
 <header class="header">
     <div>
         <h1>河川事業トレンド分析</h1>
-        <div class="header-subtitle">国土交通省・都道府県の河川事業情報を収集・分析</div>
+        <div class="header-subtitle">全国河川事務所・公共事業発注情報を収集・分析</div>
     </div>
     <div class="header-actions">
         <select id="period-select" class="btn btn-secondary" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;padding:8px 12px;border-radius:8px;">
@@ -98,8 +98,8 @@
             </div>
             <div class="card-body">
                 <p style="color:var(--text-light);font-size:13px;margin-bottom:16px;">
-                    河川事業において求められている数値解析・シミュレーション技術のトレンドを表示します。
-                    洪水シミュレーション、流出解析、河床変動計算などの技術キーワードの出現頻度を分析しています。
+                    全国の河川事務所HP・発注情報から検出された数値解析・シミュレーション技術のトレンドを表示します。
+                    洪水シミュレーション、流出解析、河床変動計算、iRIC、HEC-RAS等の技術キーワードの出現頻度を分析しています。
                 </p>
                 <div class="chart-container" style="height:450px;">
                     <canvas id="simulation-chart"></canvas>
@@ -162,12 +162,12 @@
                 <div class="filter-bar" style="margin-bottom:0;">
                     <select id="article-category" onchange="loadArticles(1)">
                         <option value="">全カテゴリ</option>
-                        <option value="報道発表">報道発表</option>
-                        <option value="技術基準">技術基準</option>
-                        <option value="技術研究開発">技術研究開発</option>
                         <option value="新着情報">新着情報</option>
-                        <option value="地方整備局">地方整備局</option>
-                        <option value="都道府県">都道府県</option>
+                        <option value="記者発表">記者発表</option>
+                        <option value="河川事務所">河川事務所</option>
+                        <option value="発注情報">発注情報</option>
+                        <option value="入札公告">入札公告</option>
+                        <option value="発注見通し">発注見通し</option>
                     </select>
                     <select id="article-region" onchange="loadArticles(1)">
                         <option value="">全地域</option>
@@ -175,6 +175,7 @@
                         <option value="北海道">北海道</option>
                         <option value="東北">東北</option>
                         <option value="関東">関東</option>
+                        <option value="北陸">北陸</option>
                         <option value="中部">中部</option>
                         <option value="近畿">近畿</option>
                         <option value="中国">中国</option>

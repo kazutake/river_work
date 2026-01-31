@@ -1,6 +1,8 @@
 """アプリケーション設定"""
 
+# ========================================
 # 河川事業に関連するキーワード辞書
+# ========================================
 RIVER_KEYWORDS = {
     "事業課題": [
         "洪水対策", "治水", "水害", "浸水", "氾濫", "堤防", "護岸",
@@ -46,74 +48,319 @@ RIVER_KEYWORDS = {
         "技術基準", "ガイドライン", "マニュアル",
         "予算", "事業評価", "費用便益",
     ],
+    "発注・調達": [
+        "一般競争入札", "公募型プロポーザル", "総合評価落札方式",
+        "簡易公募型競争入札", "指名競争入札",
+        "業務委託", "工事発注", "設計業務", "調査業務", "測量業務",
+        "河川測量", "河川設計", "河川工事", "護岸工事", "堤防工事",
+        "砂防工事", "ダム工事", "水門工事",
+        "解析業務", "シミュレーション業務", "検討業務",
+        "技術提案", "プロポーザル", "総合評価",
+    ],
 }
 
-# 国土交通省の情報ソース
-MLIT_SOURCES = [
-    {
-        "name": "国土交通省 水管理・国土保全局",
-        "url": "https://www.mlit.go.jp/river/index.html",
-        "type": "main_page",
-    },
-    {
-        "name": "国土交通省 報道発表（河川）",
-        "url": "https://www.mlit.go.jp/river/river_tk1_000014.html",
-        "type": "press_release",
-    },
-    {
-        "name": "国土交通省 河川の技術基準",
-        "url": "https://www.mlit.go.jp/river/shishin_guideline/index.html",
-        "type": "technical",
-    },
-    {
-        "name": "国土交通省 河川砂防技術研究開発",
-        "url": "https://www.mlit.go.jp/river/gijutsu/index.html",
-        "type": "research",
-    },
+# ========================================
+# 全国 河川事務所 一覧
+# ========================================
+
+# --- 北海道開発局 開発建設部 ---
+HOKKAIDO_RIVER_OFFICES = [
+    {"name": "札幌開発建設部", "region": "北海道", "bureau": "北海道開発局",
+     "url": "https://www.hkd.mlit.go.jp/sp/index.html"},
+    {"name": "小樽開発建設部", "region": "北海道", "bureau": "北海道開発局",
+     "url": "https://www.hkd.mlit.go.jp/ot/index.html"},
+    {"name": "函館開発建設部", "region": "北海道", "bureau": "北海道開発局",
+     "url": "https://www.hkd.mlit.go.jp/hk/index.html"},
+    {"name": "旭川開発建設部", "region": "北海道", "bureau": "北海道開発局",
+     "url": "https://www.hkd.mlit.go.jp/as/index.html"},
+    {"name": "室蘭開発建設部", "region": "北海道", "bureau": "北海道開発局",
+     "url": "https://www.hkd.mlit.go.jp/mr/index.html"},
+    {"name": "釧路開発建設部", "region": "北海道", "bureau": "北海道開発局",
+     "url": "https://www.hkd.mlit.go.jp/ks/index.html"},
+    {"name": "帯広開発建設部", "region": "北海道", "bureau": "北海道開発局",
+     "url": "https://www.hkd.mlit.go.jp/ob/index.html"},
+    {"name": "網走開発建設部", "region": "北海道", "bureau": "北海道開発局",
+     "url": "https://www.hkd.mlit.go.jp/ab/index.html"},
+    {"name": "留萌開発建設部", "region": "北海道", "bureau": "北海道開発局",
+     "url": "https://www.hkd.mlit.go.jp/rm/index.html"},
+    {"name": "稚内開発建設部", "region": "北海道", "bureau": "北海道開発局",
+     "url": "https://www.hkd.mlit.go.jp/wk/index.html"},
 ]
 
-# 主要な都道府県河川関連ページ
-PREFECTURE_SOURCES = [
-    {"name": "北海道", "region": "北海道",
-     "url": "https://www.pref.hokkaido.lg.jp/kn/ksb/index.html"},
-    {"name": "東京都", "region": "関東",
-     "url": "https://www.kensetsu.metro.tokyo.lg.jp/jigyo/river/index.html"},
-    {"name": "新潟県", "region": "中部",
-     "url": "https://www.pref.niigata.lg.jp/site/kasen/"},
-    {"name": "愛知県", "region": "中部",
-     "url": "https://www.pref.aichi.jp/soshiki/kasen/"},
-    {"name": "大阪府", "region": "近畿",
-     "url": "https://www.pref.osaka.lg.jp/kasenseibi/index.html"},
-    {"name": "広島県", "region": "中国",
-     "url": "https://www.pref.hiroshima.lg.jp/soshiki/98/"},
-    {"name": "福岡県", "region": "九州",
-     "url": "https://www.pref.fukuoka.lg.jp/contents/kasen.html"},
-    {"name": "宮城県", "region": "東北",
-     "url": "https://www.pref.miyagi.jp/soshiki/kasen/"},
-    {"name": "静岡県", "region": "中部",
-     "url": "https://www.pref.shizuoka.jp/kensetsu/ke-400/index.html"},
-    {"name": "熊本県", "region": "九州",
-     "url": "https://www.pref.kumamoto.jp/soshiki/97/"},
+# --- 東北地方整備局 河川事務所 ---
+TOHOKU_RIVER_OFFICES = [
+    {"name": "岩木川河川事務所", "region": "東北", "bureau": "東北地方整備局",
+     "url": "https://www.thr.mlit.go.jp/iwaki/"},
+    {"name": "青森河川国道事務所", "region": "東北", "bureau": "東北地方整備局",
+     "url": "https://www.thr.mlit.go.jp/aomori/"},
+    {"name": "岩手河川国道事務所", "region": "東北", "bureau": "東北地方整備局",
+     "url": "https://www.thr.mlit.go.jp/iwate/"},
+    {"name": "北上川下流河川事務所", "region": "東北", "bureau": "東北地方整備局",
+     "url": "https://www.thr.mlit.go.jp/karyuu/"},
+    {"name": "秋田河川国道事務所", "region": "東北", "bureau": "東北地方整備局",
+     "url": "https://www.thr.mlit.go.jp/akita/"},
+    {"name": "湯沢河川国道事務所", "region": "東北", "bureau": "東北地方整備局",
+     "url": "https://www.thr.mlit.go.jp/yuzawa/"},
+    {"name": "山形河川国道事務所", "region": "東北", "bureau": "東北地方整備局",
+     "url": "https://www.thr.mlit.go.jp/yamagata/"},
+    {"name": "最上川河川事務所", "region": "東北", "bureau": "東北地方整備局",
+     "url": "https://www.thr.mlit.go.jp/mogami/"},
+    {"name": "福島河川国道事務所", "region": "東北", "bureau": "東北地方整備局",
+     "url": "https://www.thr.mlit.go.jp/fukushima/"},
+    {"name": "北上川上流河川事務所", "region": "東北", "bureau": "東北地方整備局",
+     "url": "https://www.thr.mlit.go.jp/jouryuu/"},
 ]
 
-# 地方整備局
-REGIONAL_BUREAU_SOURCES = [
-    {"name": "北海道開発局", "region": "北海道",
-     "url": "https://www.hkd.mlit.go.jp/ky/kn/river_firing/index.html"},
-    {"name": "東北地方整備局", "region": "東北",
-     "url": "https://www.thr.mlit.go.jp/river/index.html"},
-    {"name": "関東地方整備局", "region": "関東",
-     "url": "https://www.ktr.mlit.go.jp/river/index.htm"},
-    {"name": "北陸地方整備局", "region": "中部",
-     "url": "https://www.hrr.mlit.go.jp/river/index.html"},
-    {"name": "中部地方整備局", "region": "中部",
-     "url": "https://www.cbr.mlit.go.jp/kawatomizu/index.htm"},
-    {"name": "近畿地方整備局", "region": "近畿",
-     "url": "https://www.kkr.mlit.go.jp/river/index.php"},
-    {"name": "中国地方整備局", "region": "中国",
-     "url": "https://www.cgr.mlit.go.jp/river/index.html"},
-    {"name": "四国地方整備局", "region": "四国",
-     "url": "https://www.skr.mlit.go.jp/kasen/index.html"},
-    {"name": "九州地方整備局", "region": "九州",
-     "url": "https://www.qsr.mlit.go.jp/n-kasen/index.html"},
+# --- 関東地方整備局 河川事務所 ---
+KANTO_RIVER_OFFICES = [
+    {"name": "利根川上流河川事務所", "region": "関東", "bureau": "関東地方整備局",
+     "url": "https://www.ktr.mlit.go.jp/tonejo/"},
+    {"name": "利根川下流河川事務所", "region": "関東", "bureau": "関東地方整備局",
+     "url": "https://www.ktr.mlit.go.jp/tonege/"},
+    {"name": "江戸川河川事務所", "region": "関東", "bureau": "関東地方整備局",
+     "url": "https://www.ktr.mlit.go.jp/edogawa/"},
+    {"name": "荒川上流河川事務所", "region": "関東", "bureau": "関東地方整備局",
+     "url": "https://www.ktr.mlit.go.jp/arajo/"},
+    {"name": "荒川下流河川事務所", "region": "関東", "bureau": "関東地方整備局",
+     "url": "https://www.ktr.mlit.go.jp/arage/"},
+    {"name": "京浜河川事務所", "region": "関東", "bureau": "関東地方整備局",
+     "url": "https://www.ktr.mlit.go.jp/keihin/"},
+    {"name": "甲府河川国道事務所", "region": "関東", "bureau": "関東地方整備局",
+     "url": "https://www.ktr.mlit.go.jp/kofu/"},
+    {"name": "渡良瀬川河川事務所", "region": "関東", "bureau": "関東地方整備局",
+     "url": "https://www.ktr.mlit.go.jp/watarase/"},
+    {"name": "下館河川事務所", "region": "関東", "bureau": "関東地方整備局",
+     "url": "https://www.ktr.mlit.go.jp/shimodate/"},
+    {"name": "常陸河川国道事務所", "region": "関東", "bureau": "関東地方整備局",
+     "url": "https://www.ktr.mlit.go.jp/hitachi/"},
+    {"name": "霞ヶ浦河川事務所", "region": "関東", "bureau": "関東地方整備局",
+     "url": "https://www.ktr.mlit.go.jp/kasumi/"},
+]
+
+# --- 北陸地方整備局 河川事務所 ---
+HOKURIKU_RIVER_OFFICES = [
+    {"name": "羽越河川国道事務所", "region": "北陸", "bureau": "北陸地方整備局",
+     "url": "https://www.hrr.mlit.go.jp/uetsu/"},
+    {"name": "新潟河川事務所", "region": "北陸", "bureau": "北陸地方整備局",
+     "url": "https://www.hrr.mlit.go.jp/niigata/"},
+    {"name": "信濃川河川事務所", "region": "北陸", "bureau": "北陸地方整備局",
+     "url": "https://www.hrr.mlit.go.jp/shinano/"},
+    {"name": "信濃川下流河川事務所", "region": "北陸", "bureau": "北陸地方整備局",
+     "url": "https://www.hrr.mlit.go.jp/shinage/"},
+    {"name": "阿賀川河川事務所", "region": "北陸", "bureau": "北陸地方整備局",
+     "url": "https://www.hrr.mlit.go.jp/agagawa/"},
+    {"name": "湯沢砂防事務所", "region": "北陸", "bureau": "北陸地方整備局",
+     "url": "https://www.hrr.mlit.go.jp/yusabo/"},
+    {"name": "金沢河川国道事務所", "region": "北陸", "bureau": "北陸地方整備局",
+     "url": "https://www.hrr.mlit.go.jp/kanazawa/"},
+    {"name": "富山河川国道事務所", "region": "北陸", "bureau": "北陸地方整備局",
+     "url": "https://www.hrr.mlit.go.jp/toyama/"},
+    {"name": "黒部河川事務所", "region": "北陸", "bureau": "北陸地方整備局",
+     "url": "https://www.hrr.mlit.go.jp/kurobe/"},
+]
+
+# --- 中部地方整備局 河川事務所 ---
+CHUBU_RIVER_OFFICES = [
+    {"name": "木曽川上流河川事務所", "region": "中部", "bureau": "中部地方整備局",
+     "url": "https://www.cbr.mlit.go.jp/kisojyo/"},
+    {"name": "木曽川下流河川事務所", "region": "中部", "bureau": "中部地方整備局",
+     "url": "https://www.cbr.mlit.go.jp/kisokaryu/"},
+    {"name": "庄内川河川事務所", "region": "中部", "bureau": "中部地方整備局",
+     "url": "https://www.cbr.mlit.go.jp/shonai/"},
+    {"name": "豊橋河川事務所", "region": "中部", "bureau": "中部地方整備局",
+     "url": "https://www.cbr.mlit.go.jp/toyohashi/"},
+    {"name": "浜松河川国道事務所", "region": "中部", "bureau": "中部地方整備局",
+     "url": "https://www.cbr.mlit.go.jp/hamamatsu/"},
+    {"name": "沼津河川国道事務所", "region": "中部", "bureau": "中部地方整備局",
+     "url": "https://www.cbr.mlit.go.jp/numazu/"},
+    {"name": "静岡河川事務所", "region": "中部", "bureau": "中部地方整備局",
+     "url": "https://www.cbr.mlit.go.jp/shizukawa/"},
+    {"name": "天竜川上流河川事務所", "region": "中部", "bureau": "中部地方整備局",
+     "url": "https://www.cbr.mlit.go.jp/tenjyo/"},
+    {"name": "飯田国道事務所", "region": "中部", "bureau": "中部地方整備局",
+     "url": "https://www.cbr.mlit.go.jp/iida/"},
+    {"name": "越美山系砂防事務所", "region": "中部", "bureau": "中部地方整備局",
+     "url": "https://www.cbr.mlit.go.jp/etumi/"},
+    {"name": "多治見砂防国道事務所", "region": "中部", "bureau": "中部地方整備局",
+     "url": "https://www.cbr.mlit.go.jp/tajimi/"},
+]
+
+# --- 近畿地方整備局 河川事務所 ---
+KINKI_RIVER_OFFICES = [
+    {"name": "琵琶湖河川事務所", "region": "近畿", "bureau": "近畿地方整備局",
+     "url": "https://www.kkr.mlit.go.jp/biwako/"},
+    {"name": "淀川河川事務所", "region": "近畿", "bureau": "近畿地方整備局",
+     "url": "https://www.kkr.mlit.go.jp/yodogawa/"},
+    {"name": "大和川河川事務所", "region": "近畿", "bureau": "近畿地方整備局",
+     "url": "https://www.kkr.mlit.go.jp/yamato/"},
+    {"name": "紀の川河川事務所", "region": "近畿", "bureau": "近畿地方整備局",
+     "url": "https://www.kkr.mlit.go.jp/kinokawa/"},
+    {"name": "福知山河川国道事務所", "region": "近畿", "bureau": "近畿地方整備局",
+     "url": "https://www.kkr.mlit.go.jp/fukuchiyama/"},
+    {"name": "豊岡河川国道事務所", "region": "近畿", "bureau": "近畿地方整備局",
+     "url": "https://www.kkr.mlit.go.jp/toyooka/"},
+    {"name": "木津川上流河川事務所", "region": "近畿", "bureau": "近畿地方整備局",
+     "url": "https://www.kkr.mlit.go.jp/kizujyo/"},
+    {"name": "猪名川河川事務所", "region": "近畿", "bureau": "近畿地方整備局",
+     "url": "https://www.kkr.mlit.go.jp/inagawa/"},
+]
+
+# --- 中国地方整備局 河川事務所 ---
+CHUGOKU_RIVER_OFFICES = [
+    {"name": "岡山河川事務所", "region": "中国", "bureau": "中国地方整備局",
+     "url": "https://www.cgr.mlit.go.jp/okakawa/"},
+    {"name": "福山河川国道事務所", "region": "中国", "bureau": "中国地方整備局",
+     "url": "https://www.cgr.mlit.go.jp/fukuyama/"},
+    {"name": "三次河川国道事務所", "region": "中国", "bureau": "中国地方整備局",
+     "url": "https://www.cgr.mlit.go.jp/miyoshi/"},
+    {"name": "太田川河川事務所", "region": "中国", "bureau": "中国地方整備局",
+     "url": "https://www.cgr.mlit.go.jp/ootagawa/"},
+    {"name": "出雲河川事務所", "region": "中国", "bureau": "中国地方整備局",
+     "url": "https://www.cgr.mlit.go.jp/izumokawa/"},
+    {"name": "日野川河川事務所", "region": "中国", "bureau": "中国地方整備局",
+     "url": "https://www.cgr.mlit.go.jp/hinokawa/"},
+    {"name": "鳥取河川国道事務所", "region": "中国", "bureau": "中国地方整備局",
+     "url": "https://www.cgr.mlit.go.jp/tottori/"},
+    {"name": "山口河川国道事務所", "region": "中国", "bureau": "中国地方整備局",
+     "url": "https://www.cgr.mlit.go.jp/yamaguchi/"},
+]
+
+# --- 四国地方整備局 河川事務所 ---
+SHIKOKU_RIVER_OFFICES = [
+    {"name": "徳島河川国道事務所", "region": "四国", "bureau": "四国地方整備局",
+     "url": "https://www.skr.mlit.go.jp/tokushima/"},
+    {"name": "那賀川河川事務所", "region": "四国", "bureau": "四国地方整備局",
+     "url": "https://www.skr.mlit.go.jp/nakagawa/"},
+    {"name": "高知河川国道事務所", "region": "四国", "bureau": "四国地方整備局",
+     "url": "https://www.skr.mlit.go.jp/kochi/"},
+    {"name": "中筋川総合開発事務所", "region": "四国", "bureau": "四国地方整備局",
+     "url": "https://www.skr.mlit.go.jp/nakasuji/"},
+    {"name": "松山河川国道事務所", "region": "四国", "bureau": "四国地方整備局",
+     "url": "https://www.skr.mlit.go.jp/matsuyam/"},
+    {"name": "大洲河川国道事務所", "region": "四国", "bureau": "四国地方整備局",
+     "url": "https://www.skr.mlit.go.jp/oozu/"},
+    {"name": "香川河川国道事務所", "region": "四国", "bureau": "四国地方整備局",
+     "url": "https://www.skr.mlit.go.jp/kagawa/"},
+    {"name": "吉野川河川事務所", "region": "四国", "bureau": "四国地方整備局",
+     "url": "https://www.skr.mlit.go.jp/yoshino/"},
+]
+
+# --- 九州地方整備局 河川事務所 ---
+KYUSHU_RIVER_OFFICES = [
+    {"name": "遠賀川河川事務所", "region": "九州", "bureau": "九州地方整備局",
+     "url": "https://www.qsr.mlit.go.jp/onga/"},
+    {"name": "筑後川河川事務所", "region": "九州", "bureau": "九州地方整備局",
+     "url": "https://www.qsr.mlit.go.jp/chikugo/"},
+    {"name": "武雄河川事務所", "region": "九州", "bureau": "九州地方整備局",
+     "url": "https://www.qsr.mlit.go.jp/takeo/"},
+    {"name": "長崎河川国道事務所", "region": "九州", "bureau": "九州地方整備局",
+     "url": "https://www.qsr.mlit.go.jp/nagasaki/"},
+    {"name": "熊本河川国道事務所", "region": "九州", "bureau": "九州地方整備局",
+     "url": "https://www.qsr.mlit.go.jp/kumamoto/"},
+    {"name": "八代河川国道事務所", "region": "九州", "bureau": "九州地方整備局",
+     "url": "https://www.qsr.mlit.go.jp/yatusiro/"},
+    {"name": "川辺川ダム砂防事務所", "region": "九州", "bureau": "九州地方整備局",
+     "url": "https://www.qsr.mlit.go.jp/kawabe/"},
+    {"name": "大分河川国道事務所", "region": "九州", "bureau": "九州地方整備局",
+     "url": "https://www.qsr.mlit.go.jp/oita/"},
+    {"name": "延岡河川国道事務所", "region": "九州", "bureau": "九州地方整備局",
+     "url": "https://www.qsr.mlit.go.jp/nobeoka/"},
+    {"name": "宮崎河川国道事務所", "region": "九州", "bureau": "九州地方整備局",
+     "url": "https://www.qsr.mlit.go.jp/miyazaki/"},
+    {"name": "大隅河川国道事務所", "region": "九州", "bureau": "九州地方整備局",
+     "url": "https://www.qsr.mlit.go.jp/osumi/"},
+    {"name": "川内川河川事務所", "region": "九州", "bureau": "九州地方整備局",
+     "url": "https://www.qsr.mlit.go.jp/sendai/"},
+]
+
+# 全河川事務所を統合
+ALL_RIVER_OFFICES = (
+    HOKKAIDO_RIVER_OFFICES
+    + TOHOKU_RIVER_OFFICES
+    + KANTO_RIVER_OFFICES
+    + HOKURIKU_RIVER_OFFICES
+    + CHUBU_RIVER_OFFICES
+    + KINKI_RIVER_OFFICES
+    + CHUGOKU_RIVER_OFFICES
+    + SHIKOKU_RIVER_OFFICES
+    + KYUSHU_RIVER_OFFICES
+)
+
+# ========================================
+# 公共事業 発注情報ソース
+# ========================================
+
+# 各地方整備局の入札・契約情報ページ
+PROCUREMENT_SOURCES = [
+    # --- 国土交通省 本省 ---
+    {"name": "国土交通省 入札・契約情報",
+     "region": "全国", "bureau": "国土交通省",
+     "url": "https://www.mlit.go.jp/chotatsu/index.html",
+     "type": "ministry"},
+
+    # --- 北海道開発局 ---
+    {"name": "北海道開発局 入札・契約情報",
+     "region": "北海道", "bureau": "北海道開発局",
+     "url": "https://www.hkd.mlit.go.jp/ky/jg/giken/index.html",
+     "type": "bureau"},
+
+    # --- 東北地方整備局 ---
+    {"name": "東北地方整備局 入札・契約情報",
+     "region": "東北", "bureau": "東北地方整備局",
+     "url": "https://www.thr.mlit.go.jp/bumon/b06111/cp-info/index.html",
+     "type": "bureau"},
+
+    # --- 関東地方整備局 ---
+    {"name": "関東地方整備局 入札・契約情報",
+     "region": "関東", "bureau": "関東地方整備局",
+     "url": "https://www.ktr.mlit.go.jp/honkyoku/nyuusatu/index.htm",
+     "type": "bureau"},
+
+    # --- 北陸地方整備局 ---
+    {"name": "北陸地方整備局 入札・契約情報",
+     "region": "北陸", "bureau": "北陸地方整備局",
+     "url": "https://www.hrr.mlit.go.jp/bosyu/index.html",
+     "type": "bureau"},
+
+    # --- 中部地方整備局 ---
+    {"name": "中部地方整備局 入札・契約情報",
+     "region": "中部", "bureau": "中部地方整備局",
+     "url": "https://www.cbr.mlit.go.jp/architecture/kensetsugijutsu/index.htm",
+     "type": "bureau"},
+
+    # --- 近畿地方整備局 ---
+    {"name": "近畿地方整備局 入札・契約情報",
+     "region": "近畿", "bureau": "近畿地方整備局",
+     "url": "https://www.kkr.mlit.go.jp/contract/index.php",
+     "type": "bureau"},
+
+    # --- 中国地方整備局 ---
+    {"name": "中国地方整備局 入札・契約情報",
+     "region": "中国", "bureau": "中国地方整備局",
+     "url": "https://www.cgr.mlit.go.jp/contract/index.htm",
+     "type": "bureau"},
+
+    # --- 四国地方整備局 ---
+    {"name": "四国地方整備局 入札・契約情報",
+     "region": "四国", "bureau": "四国地方整備局",
+     "url": "https://www.skr.mlit.go.jp/bosyu/index.html",
+     "type": "bureau"},
+
+    # --- 九州地方整備局 ---
+    {"name": "九州地方整備局 入札・契約情報",
+     "region": "九州", "bureau": "九州地方整備局",
+     "url": "https://www.qsr.mlit.go.jp/n-contract/index.html",
+     "type": "bureau"},
+]
+
+# 電子入札・発注情報公開サービス
+PROCUREMENT_PORTAL_SOURCES = [
+    {"name": "国土交通省 電子入札システム",
+     "region": "全国", "bureau": "国土交通省",
+     "url": "https://www.e-bisc.go.jp/",
+     "type": "portal"},
+    {"name": "入札情報サービス(PPI)",
+     "region": "全国", "bureau": "国土交通省",
+     "url": "https://ppi.epco.go.jp/",
+     "type": "portal"},
 ]

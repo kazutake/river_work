@@ -4,9 +4,9 @@ import logging
 from datetime import datetime
 
 from ..database import get_db
-from ..config import PREFECTURE_SOURCES, REGIONAL_BUREAU_SOURCES
-from .mlit_collector import MLITRiverCollector, MLITBureauCollector
-from .prefecture_collector import PrefectureCollector
+from ..config import ALL_RIVER_OFFICES, PROCUREMENT_SOURCES, PROCUREMENT_PORTAL_SOURCES
+from .river_office_collector import RiverOfficeCollector
+from .procurement_collector import ProcurementCollector
 
 logger = logging.getLogger(__name__)
 
@@ -20,26 +20,38 @@ class CollectorManager:
 
     def _build_collectors(self):
         """コレクターを構築"""
-        # 国土交通省
-        self.collectors.append(MLITRiverCollector())
-
-        # 地方整備局
-        for source in REGIONAL_BUREAU_SOURCES:
+        # 全国の河川事務所
+        for office in ALL_RIVER_OFFICES:
             self.collectors.append(
-                MLITBureauCollector(
-                    name=source["name"],
-                    url=source["url"],
-                    region=source["region"],
+                RiverOfficeCollector(
+                    name=office["name"],
+                    url=office["url"],
+                    region=office["region"],
+                    bureau=office["bureau"],
                 )
             )
 
-        # 都道府県
-        for source in PREFECTURE_SOURCES:
+        # 地方整備局 入札・契約情報
+        for source in PROCUREMENT_SOURCES:
             self.collectors.append(
-                PrefectureCollector(
+                ProcurementCollector(
                     name=source["name"],
                     url=source["url"],
                     region=source["region"],
+                    bureau=source["bureau"],
+                    source_type=source["type"],
+                )
+            )
+
+        # 電子入札ポータル
+        for source in PROCUREMENT_PORTAL_SOURCES:
+            self.collectors.append(
+                ProcurementCollector(
+                    name=source["name"],
+                    url=source["url"],
+                    region=source["region"],
+                    bureau=source["bureau"],
+                    source_type=source["type"],
                 )
             )
 

@@ -13,6 +13,7 @@ const CATEGORY_COLORS = {
     '数値解析・シミュレーション': '#2980b9',
     '先端技術': '#27ae60',
     '政策・制度': '#8e44ad',
+    '発注・調達': '#e67e22',
 };
 
 let currentPeriod = '30d';
